@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `week0_explore/` now has real instructor-provided scaffolding (CircleMUD
 docker infra, the `mud_manager` Ruby gem, the world-data parser, and the
 preview dashboard) — see the folder structure below. `week1_baseline/` and
-`week2_capable/` are still placeholders (`.gitkeep` only): no application
+`week2_capable/` are still placeholders (`.keep` only): no application
 code, dependencies, or build/lint/test tooling exists there yet. Don't invent
 commands or architecture for those folders that aren't there. Once the
 week1/week2 agents have real code, update this file with actual
@@ -47,31 +47,6 @@ claude-code-camp-2026-Q2/
 └── docs/                   # top-level technical documentation artifacts
     └── plans/              # plan files the agent executes against
 ```
-
-## Commit messages
-
-This is a manually graded repo — commit history is part of what gets read.
-Whether the commit is authored by Dan or by Claude Code, every message must:
-
-- Use imperative mood ("add", "fix", "update" — not "added"/"adding").
-- Have a short summary line (~50-70 chars), body only if it adds real context.
-- Say *why* the change was made, not just restate the diff.
-- Be typo-free and spelled out in full — no shorthand like "strucutre".
-
-Before writing a commit message, don't just describe the immediate diff —
-check it reads cleanly on its own in `git log --oneline`.
-
-## GitHub issues & PRs
-
-If something comes up that Dan needs to be aware of, fix, or make a call on
-(ambiguous instructor requirements, a risky assumption, a grader-visible
-inconsistency, a bug too big to just fix inline) — file it as a GitHub issue
-on this repo rather than silently patching around it or dropping it in chat
-only.
-
-Every Issue and PR requires Dan's review before continuing: don't close an
-issue, merge a PR, or build follow-on work on top of one until Dan has
-reviewed and signed off.
 
 See `README.md` for the project scenario, task, and stack decisions.
 
