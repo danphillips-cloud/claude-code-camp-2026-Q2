@@ -23,7 +23,7 @@ around them.
 - Repo must be public.
 - Fresh init only — never forked/cloned from the example repo.
 - Do not rename top-level folders or drop new files at the top level.
-- `.boukensha` is a marker file — leave it alone (likely grader-checked).
+- `.boukensha/` is a marker directory (contains only `.keep`) — leave it alone (likely grader-checked).
 - `.gitignore` must be in place *before* the first `git add` — never commit
   `node_modules` or similar.
 
@@ -31,10 +31,11 @@ around them.
 
 ```
 claude-code-camp-2026-Q2/
-├── .boukensha              # marker file, just leave it
+├── .boukensha/              # marker directory (.keep only), just leave it
 ├── .gitignore
+├── bin/
+│   └── remove_zone_ids      # strips WSL Zone.Identifier files, from official template
 ├── week0_explore/
-│   ├── docs/shred/*.md            # scratch/working notes — keep, don't delete
 │   ├── mud_manager/               # Ruby gem: telnet session mgmt + MUD command primitives
 │   ├── infrastructure/            # docker-compose etc. for the MUD sandbox
 │   ├── circlemud-world-parser/    # parses CircleMUD world files (wld/mob/obj/shp/zon) to JSON
@@ -47,6 +48,13 @@ claude-code-camp-2026-Q2/
 └── docs/                   # top-level technical documentation artifacts
     └── plans/              # plan files the agent executes against
 ```
+
+Note: `week0_explore/` has no `docs/` subfolder — verified against the
+official template repo (`ExamProCo/claude-code-camp-2026-Q2`) on
+2026-07-14. A `week0_explore/docs/shred/` folder existed locally at one
+point but didn't match the template or the instructor-announced structure
+(`docs/shared`) and has been removed. If a `docs/shared/` requirement is
+confirmed live, add it fresh rather than resurrecting the old folder.
 
 See `README.md` for the project scenario, task, and stack decisions.
 

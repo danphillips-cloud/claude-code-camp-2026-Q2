@@ -12,3 +12,5 @@ venv/
 .vscode/
 .claude/settings.local.json
 CLAUDE.local.md
+/research.md
+/plan.md
