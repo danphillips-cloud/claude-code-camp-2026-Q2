@@ -1,0 +1,13 @@
+# Local Python environment — never commit. Reproduce from requirements.txt.
+.venv/
+
+# mud.py daemon session state. Lives in-folder now (never machine-local temp),
+# so it must be ignored. The glob also covers per-character dirs like
+# .mud-session-bonzo.
+.mud-session*/
+
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store

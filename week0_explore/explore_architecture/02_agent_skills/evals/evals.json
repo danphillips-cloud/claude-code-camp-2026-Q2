@@ -1,0 +1,26 @@
+{
+  "skill_name": "mud-player",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "new_goal_autonomous_play",
+      "prompt": "Play the MUD with the goal: reach level 7. Hunt mobs, gain experience, and level up. Stop when you reach level 7 or after 5 mud send commands, whichever comes first. Update data/player.md with your progress.",
+      "expected_output": "Character hunts mobs, gains experience, updates player.md with current level and goal status. Should show autonomous decision-making (choosing hunt locations, fighting mobs, leveling up).",
+      "files": []
+    },
+    {
+      "id": 2,
+      "eval_name": "memory_persistence_continue",
+      "prompt": "Connect to the MUD. Read data/player.md and data/world.md. Continue the active goal from player.md (if set). Make at least 3 MUD actions that progress toward the goal. Update both files with new information discovered (new rooms, mobs, locations).",
+      "expected_output": "Skill reads memory files, continues from where it left off, takes autonomous actions toward the goal, and updates memory files with new world knowledge.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "eval_name": "goal_breakdown_exploration",
+      "prompt": "Set a new goal: 'map the newbie zone completely'. Break this into steps: explore unmapped areas, record room names and exits, find all NPCs. After 6 mud send commands, report what areas have been mapped and what remains. Update data/world.md with the new map information.",
+      "expected_output": "Skill breaks down exploration goal into steps, systematically explores rooms, records exits and NPCs, updates world.md with new map data. Shows progress toward complete zone mapping.",
+      "files": []
+    }
+  ]
+}
