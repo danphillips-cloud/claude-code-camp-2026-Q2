@@ -15,6 +15,7 @@ venv/
 CLAUDE.local.md
 /research.md
 /plan.md
+.my-notes/
 
 # Generated output from bin/convert-world (parsed CircleMUD world JSON)
 docs/explore_architectures.md
