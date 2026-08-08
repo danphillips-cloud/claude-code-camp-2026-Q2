@@ -18,6 +18,11 @@ CLAUDE.local.md
 .my-notes/
 *.gem
 
+# .boukensha/ is a marker directory — real config/sessions land in the
+# user's actual ~/.boukensha, never here. Keep only the marker file.
+/.boukensha/*
+!/.boukensha/.keep
+
 # Generated output from bin/convert-world (parsed CircleMUD world JSON)
 docs/explore_architectures.md
 week0_explore/preview/data/world/*/

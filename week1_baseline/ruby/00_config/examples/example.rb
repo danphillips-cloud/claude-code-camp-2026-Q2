@@ -1,8 +1,7 @@
 require_relative "../lib/boukensha"
 
-# Override the config directory so the example works from the repo root.
-# In real usage a user's ~/.boukensha is picked up automatically.
-ENV["BOUKENSHA_DIR"] ||= File.expand_path("../../../../.boukensha", __dir__)
+# Config directory resolves to ~/.boukensha by default (or BOUKENSHA_DIR,
+# if set in the environment before this runs).
 
 config = Boukensha::Config.new
 player_settings = config.tasks(:player)
