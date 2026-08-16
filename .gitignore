@@ -23,6 +23,11 @@ CLAUDE.local.md
 /.boukensha/*
 !/.boukensha/.keep
 
+# Steps' examples/example.rb default BOUKENSHA_DIR to a repo-relative
+# .boukensha/ if unset (see week1_baseline/.my-notes/2026-08-16_LIVE_SESSION_SUMMARY.md) —
+# the root rule above only anchors to /, so nested copies need their own rule.
+week1_baseline/.boukensha/
+
 # Generated output from bin/convert-world (parsed CircleMUD world JSON)
 docs/explore_architectures.md
 week0_explore/preview/data/world/*/

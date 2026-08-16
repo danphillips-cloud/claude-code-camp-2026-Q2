@@ -217,6 +217,7 @@ module MudManager
         ensure
           @buffer_mu.synchronize do
             @closed = true
+            @socket = nil
             @buffer_cv.broadcast
           end
         end
