@@ -12,8 +12,11 @@ GEM
       bubbletea
       harmonica
       lipgloss
+    bubbletea (0.1.4-arm64-darwin)
+      lipgloss (~> 0.1)
     bubbletea (0.1.4-x86_64-linux-gnu)
       lipgloss (~> 0.1)
+    bubblezone (0.1.2-arm64-darwin)
     bubblezone (0.1.2-x86_64-linux-gnu)
     charm (0.1.0)
       bubbles
@@ -25,15 +28,19 @@ GEM
       lipgloss
       ntcharts
     dotenv (3.2.0)
+    glamour (0.2.2-arm64-darwin)
     glamour (0.2.2-x86_64-linux-gnu)
-    gum (0.3.2)
+    gum (0.3.2-arm64-darwin)
+    gum (0.3.2-x86_64-linux)
     harmonica (0.1.1)
+    lipgloss (0.2.2-arm64-darwin)
     lipgloss (0.2.2-x86_64-linux-gnu)
     mud_manager (0.1.0)
+    ntcharts (0.1.2-arm64-darwin)
     ntcharts (0.1.2-x86_64-linux-gnu)
 
 PLATFORMS
-  ruby
+  arm64-darwin
   x86_64-linux
 
 DEPENDENCIES

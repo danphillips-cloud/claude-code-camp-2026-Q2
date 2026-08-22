@@ -1,168 +1,159 @@
 # Week 1 Technical Documentation
 
-Arcane Loop's ask is specific: prove the agent can navigate a traditional
-MUD before it ever touches the live world, player data, or proprietary game
-systems. Week 0 answered a narrower question, which architecture can even
-hold a MUD session. Week 1 built the purpose-built loop that question
-pointed to (`week1_baseline/ruby/00_config` through `12_context`, see
-`ITERATIONS.md`) and this entry is about the first time that loop actually
-had to prove itself against a live server, not a plan.
+The QnA team's suspicion is that players get confused, blocked, bored, or
+overpowered somewhere in the journey, and before an agent can report on
+any of that it has to be able to make the journey itself. Week 0 answered
+a narrower question, which architecture can even hold a MUD session. Week
+1 is where that question got an answer to build on: `Boukensha`, the
+bootcamp's own teaching framework (`boukensha.gemspec` credits Andrew
+Brown/ExamPro as the author), built up through its own thirteen-step
+iteration path
+(`week1_baseline/ruby/00_config` through `12_context`, see `ITERATIONS.md`)
+and modified wherever the live scenario actually needed it, not designed
+from scratch. This entry is about using that base to answer the question
+Arcane Loop actually asked: can this agent navigate a traditional MUD on
+its own, before it gets anywhere near their live world, player data, or
+proprietary game systems.
 
 ## Technical Goal
-Take the finished baseline agent (`boukensha`, step 11's TUI build) and
-run it against a live CircleMUD/tbaMUD instance for real: connect as a
-character, read room text, move with intent, and reach a concrete
-in-world destination, the Donation Room, without hand-holding beyond an
-initial goal and some general navigation knowledge. This is the scenario's
-own gate before Week 2's memory/judgment work is allowed to start.
+Take the instructor-provided Boukensha framework and build it up step by
+step into a baseline agent with every component a MUD-playing agent
+needs: an agentic loop, a tool registry, five interchangeable LLM
+backends behind one normalized request/response shape, structured
+logging, a DSL, global binary execution, a standard tool library, a
+terminal UI, and context management, patching the vendor code as needed
+along the way rather than rewriting it. Then prove the finished thing can
+actually get somewhere in a live MUD, guided only by a general player's
+guide, not a scripted example.
 
 ## Technical Uncertainty
-- Whether the baseline's own session-handling code (`mud_manager`,
-  instructor-provided shared scaffolding under `week0_explore/`) would
-  hold up under a real, messy live session, reconnects, an idle character,
-  a server-side duplicate-login kick, rather than the clean single-shot
-  connects it had only been smoke-tested against.
-- Whether a stateless, memory-less single task run (`Boukensha.run`, no
-  REPL, no conversation carried between turns) could use a general,
-  web-sourced CircleMUD navigation guide accurately enough to reach a
-  named destination, given the guide explicitly wasn't written for this
-  exact server and stock CircleMUD forks vary in their room layouts.
+- Whether the loop and its tool dispatch, exercised so far only against
+  each step's own clean example script, would hold up navigating a real
+  MUD it hadn't been scripted for, using nothing but a player's guide and
+  its own judgment about what the world actually showed it.
+- Whether the connection-handling code underneath it, session lifecycle,
+  reconnects, would survive a real, messy live session rather than the
+  single-shot connects it had only been smoke-tested against.
+- Whether a stateless, single-call run, no REPL, no memory across turns,
+  could still produce anything resembling the signal the scenario cares
+  about: a player-journey moment worth reporting, not just a completed
+  path.
 
 ## Technical Hypotheses
-- I expected the agent-loop and tool-calling side to be solid, since
-  steps 00-10 were already built and reviewed, but expected the live
-  socket-handling path to be the weak point, since it had never been
-  exercised against a real, long-lived, occasionally-interrupted
-  connection before today.
-- I expected the navigation guide to be directionally useful but not
-  exactly correct for this server, and expected the real test to be
-  whether the agent noticed the mismatch and adapted, rather than whether
-  the guide was perfectly accurate.
+- I expected the agent loop and tool dispatch to be the solid part by
+  navigation time, since that had been built and reviewed across most of
+  the week's steps, and expected the live connection-handling path to be
+  the weak point instead, since it had never been exercised live before.
+- I expected a general player's guide to be an imperfect map for this
+  particular server, and wanted to see whether the agent would trust it
+  blindly or verify against what the world actually showed it.
 
 ## Technical Observations
-
-**The stale-socket bug.** The first live connect attempt produced a
-self-contradictory state: `mud_status` reported "disconnected," but
-`mud_connect` refused with "error: already open," and every gameplay
-command failed with "not connected." I didn't trust the agent's own
-prose summary of this, per the pre-week lesson about verifying against
-raw transcripts, so I pulled the actual tool-call/tool-result pairs
-straight from the session's JSONL log (`~/.boukensha/sessions/*.jsonl`):
-
-```
-tool_call  mud_status    {}
-tool_result mud_status    disconnected
-tool_call  mud_connect   {}
-tool_result mud_connect   error: already open
-```
-
-That confirmed it wasn't a hallucination. Reading `mud_manager/session.rb`
-found the actual cause: the reader thread's `ensure` block set
-`@closed = true` on any remote-side disconnect but never cleared `@socket`.
-`open?` (`@socket && !@closed`) correctly reported false, but `open`'s
-own guard (`raise Error, "already open" if @socket`) checked the stale
-socket instead, so once the remote end dropped the connection once, the
-session was permanently wedged until the whole process restarted.
-`lsof -nP -iTCP:4000` during a live drop showed why a real disconnect kept
-happening at all, Colima forwards container ports through its own SSH
-mux, an extra hop that can reset a connection independent of anything in
-CircleMUD or the boukensha code. Fix, in the shared `mud_manager` file:
-
-```ruby
-ensure
-  @buffer_mu.synchronize do
-    @closed = true
-    @socket = nil          # was missing; left a dead socket in place
-    @buffer_cv.broadcast
-  end
-end
-```
-
-**A second, unrelated regression.** Once the socket bug was fixed, the
-very next attempt failed cleanly with `400: system: Input should be a
-valid array`, an Anthropic API schema requirement that step 09's own
-notes had already found and fixed. Steps 10, 11, and 12 had all silently
-regressed back to sending `system` as a raw string. Same one-line fix
-(`payload[:system] = [{ type: "text", text: context.system }]`) applied
-to both `11_tui` and `12_context`.
-
-**A password typo.** After both code fixes, the next failure was a clean,
-correctly-reported "Wrong password" from CircleMUD itself, not a code
-bug. `~/.boukensha/settings.yaml` had `password: hellworld` where the
-character was actually created with `helloworld`. Worth noting only
-because it's a good example of the fixes actually working: real,
-distinguishable errors were reaching the surface instead of the earlier
-wedge, which was the whole point of the socket fix.
-
-**A clean connect, finally.**
+The build itself came together as thirteen small steps
+(`week1_baseline/ruby/00_config` through `12_context`), each its own
+working Bundler project. Most of what surfaced was ordinary patching: an
+API schema change on Anthropic's side needed one line to fix, then had to
+be caught again after later steps quietly reverted it. The one real
+engineering find was in connection handling, not the loop: a
+reader-thread `ensure` block marked a connection closed without clearing
+the socket reference, so the agent's own status check said "disconnected"
+while the reconnect guard still saw a live socket and refused. One line
+fixed it.
 
 <a href="images/week1-tui-launch.png"><img src="images/week1-tui-launch.png" alt="boukensha TUI launched against 11_tui, config resolved to ~/.boukensha, MUD reachable at localhost:4000" width="700"></a>
 
-**The navigation run.** With the environment actually working, I ran a
-single stateless `Boukensha.run` call (Claude Sonnet 4.6, no REPL, no
-memory beyond that one call) with a task built from a general CircleMUD
-player's guide: start at the Temple of Midgaard, head toward Market
-Square, then find the Donation Room, verifying real exits at every step
-rather than trusting the guide blindly. The full run, pulled from
-`~/.boukensha/sessions/20260816T161312Z-f5eee397.jsonl`:
+With that fixed, I ran the scenario: a single stateless `Boukensha.run`
+call, Claude Sonnet 4.6, no REPL, no memory beyond that call, told to get
+from the Temple of Midgaard to the Donation Room (session excerpt:
+[`sessions/2026-08-22-step11-navigation-replay.md`](sessions/2026-08-22-step11-navigation-replay.md)).
+On its own the agent got lost, so I gave it a CircleMUD navigation guide
+as a course correction, one Claude's research mode put together
+beforehand rather than me writing it by hand. It had the same problem
+Week 0 already flagged (`docs/journal/0_preweek.md`: our own `world.md`
+stored routes as prose, fine at a dozen rooms and not at a hundred),
+prose directions, not structured data, and it was wrong for this server
+on top of that: it puts the Donation Room northwest of Market Square.
+It's actually one step east of the Temple, stated outright in the
+Temple's own room text ("the donation room is in a small alcove to your
+east"), and the agent matched its move to that instead: 6 iterations, 25
+seconds, 24,505 input / 814 output tokens, $0.09 total. It treated the
+guide as a hint, not an instruction, and caught the mismatch immediately.
+One more moment stood out: an NPC handed the character a candle after
+noting it was wandering without a light source, an unscripted signal this
+stateless run never flagged as a finding, exactly the shape of thing the
+finished Player Journey Agent needs to catch.
 
-- 21 iterations, 72 seconds wall time (12:13:12-12:14:24), 123,381 input
-  / 2,648 output tokens, $0.41 total.
-- The guide was only partly right for this server. It suggested the
-  Donation Room sits roughly northwest of Market Square; the agent
-  explored west along Main Street instead (Magic Shop, a dead-end at the
-  West Gate, the Bakery), hit several dead ends, then backtracked to
-  Market Square and north through Temple Square, and found the Donation
-  Room was actually east from the Temple of Midgaard itself, one room off
-  the starting point the whole time.
-- The agent caught the mismatch itself rather than looping on the wrong
-  direction: it called `check exits` and `look <direction>` before most
-  moves, and each wrong guess resolved in one or two turns, not a stall.
-- On arrival, an in-game NPC ("a kind soul") commented on the character
-  wandering without a light source and handed over a candle, an
-  unscripted, server-side signal that the agent had wandered into unlit
-  territory unequipped, exactly the kind of player-experience detail
-  Arcane Loop is asking this agent to eventually notice and report on.
-- `log_viz` (`week1_baseline/log_viz`, pointed at `~/.boukensha/sessions`
-  via `LOG_VIZ_SESSIONS_DIR`) rendered the full transcript, tool calls,
-  costs, and raw ANSI-colored MUD output, in the browser, its first real
-  exercise since being built in step 6.
+Every cost figure here, $0.09 for the navigation run and $0.47 for a
+longer exploration run, came from log_viz reading raw API usage out of
+the JSONL, not an estimate. A 25-iteration session runs under 50 cents at
+raw rates, a reminder that a flat-fee AI subscription is subsidizing real
+usage: the metered cost per call and the subscription price are two
+different numbers, and this is the first project where a tool has put the
+first one directly in front of me.
+
+Five longer, open-ended runs pushed past pure navigation: buy food, train
+a skill, shop for weapons, and, half as a joke, see if the character
+could find anything about a minotaur ahead of an actual hunt planned for
+later. It priced out the Weapon Shop, bought a danish pastry at the
+Bakery for 7 gold and ate it, and practiced `kick` from "not learned" to
+"bad" before running out of practice sessions.
+
+<a href="images/week1-bakery-purchase.png"><img src="images/week1-bakery-purchase.png" alt="log_viz transcript showing the agent budgeting its 20 gold out loud before buying a danish pastry for 7 coins at the Bakery" width="700"></a>
+
+The minotaur search came up empty, the guide has zero mentions of one,
+checked directly. Across the five runs the agent asked over a dozen NPCs
+"about minotaur" (baker, city guard, peacekeeper, postmaster, bartender,
+knight templar, and others), shouted and gossiped the question on open
+channels, read an empty bulletin board, tried a `track` command it didn't
+have the skill for ("You have no idea how"), and got physically turned
+back by a guard blocking a level-gated room ("The guard humiliates you,
+and blocks your way").
+
+<a href="images/week1-minotaur-search.png"><img src="images/week1-minotaur-search.png" alt="log_viz transcript showing the agent asking the baker about a minotaur, then shouting the same question on the open channel" width="700"></a>
+
+<a href="images/week1-guard-block.png"><img src="images/week1-guard-block.png" alt="log_viz transcript showing a guard blocking the level-1 character from entering the Clerics' Guild bar" width="700"></a>
+
+<a href="images/week1-track-and-where.png"><img src="images/week1-track-and-where.png" alt="log_viz transcript showing the where command confirming the character is the only player online, then the track command failing with 'You have no idea how'" width="700"></a>
+
+None of it worked, honestly reported as "found nothing" rather than
+padded out. It also correctly figured out it was the only player online
+(`where` confirmed that) before wasting turns on the social channels.
+Level 1, no `track` skill, a guide with nothing on minotaurs: this
+character has no real path to that answer yet, the honest starting point
+for whatever the actual hunt looks like once there's a world model to
+work from instead of a stateless run asking NPCs one at a time.
+
+<a href="images/week1-max-iterations-winddown.png"><img src="images/week1-max-iterations-winddown.png" alt="log_viz transcript showing the agent's final wind-down summary and the max_iterations badge after hitting the 25-iteration cap" width="700"></a>
 
 ## Technical Conclusions
-- The baseline's agent loop, tool registry, and logging held up fine
-  under real play once the two code bugs were fixed, neither of those
-  bugs was in the agentic loop itself. Both were in connection-lifecycle
-  edge cases (a thread not clearing shared state, a system-prompt format
-  regression) that only a live run against a real, occasionally-flaky
-  server would surface. Config- and demo-level testing across steps 00-10
-  had never actually exercised a live connection long enough to hit
-  either one.
-- A stale/wedged session and a distinguishable server error (wrong
-  password, or a real API rejection) look completely different once the
-  socket bug is fixed. Before the fix, everything downstream looked like
-  the same contradictory mess; after, each failure pointed straight at
-  its actual cause. That difference alone was worth the fix.
-- A general, not-server-specific navigation guide was good enough to
-  direct a memory-less agent to a real destination, but only because the
-  agent treated it as a hint and verified against actual room text rather
-  than trusting it outright. A version of this agent that blindly
-  followed the guide's directions would have wandered the same
-  Main-Street dead ends without ever recovering.
-- This closes the loop on Week 0's takeaway. Every architecture there
-  could connect; this purpose-built loop is the first one I've actually
-  watched navigate a real destination end to end, hit real obstacles, and
-  adapt instead of looping.
+- Navigation itself is solved for the scope this week asked for: given
+  only a general guide and no prior knowledge of this server, the agent
+  found its way, verified rather than trusted, and recovered from wrong
+  turns in one or two moves. $0.09 and 25 seconds is the actual proof of
+  that, not a narrative claim of it.
+- The agent loop and tool dispatch never needed a rewrite; every real
+  issue this week was at the edges, an external API contract and a
+  connection path that had never been exercised live.
+- The `max_iterations` wind-down (step 5) isn't just a described feature,
+  it's been watched firing live five separate times: every one of the
+  open-ended exploration runs (buying food, training a skill, shopping for
+  weapons, hunting for a minotaur) hit the 25-iteration cap and ended with
+  an honest "here's what's done, here's what's not, here's the next
+  single action" summary instead of a hard stop or an infinite loop.
+- The candle NPC moment is the first real evidence of what Week 2 is
+  for: the world already hands out unscripted signals about player
+  state. This week's agent walked past one. It didn't miss it because it
+  couldn't see it, it missed it because nothing yet asks it to look.
+- One known gap carries into Week 2 untested: CircleMUD's duplicate-login
+  prompt has no automatic handler. It didn't bite this week only because
+  no stale session happened to be open at connect time, that's luck, not
+  a fix.
 
 ## Key Takeaway
-Getting into the MUD was never the hard part, for any architecture, in
-any week. What Week 1 actually tested was whether a purpose-built loop
-could survive the boring, unglamorous failure modes of a real connection,
-a thread that doesn't clean up shared state, an API contract that
-regressed between steps, a typo in a config file, and still come out the
-other side navigating correctly. It did, but only after those failures
-were run down with real evidence (raw JSONL logs, `lsof`, actual source
-reads) instead of guessed at. Judging whether a player is confused,
-blocked, bored, or overpowered is still entirely out of scope here, the
-agent can now reliably get somewhere and tell me if the map didn't match
-reality. Whether it can tell me a player would have given up by that
-point is Week 2's question.
+Week 0 asked whether an agent could hold a MUD session; every
+architecture could. Week 1 asked whether a purpose-built loop could
+actually navigate one it had never seen, trusting nothing it wasn't
+shown, and for $0.09 and 25 seconds, it did. But it still can't tell me a
+player was confused, it only avoided being confused itself. Closing that
+gap, from the agent not getting lost to the agent telling you where a
+real player would, is Week 2.
