@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+cd "$SCRIPT_DIR/../../ruby/07_the_run_dsl"
+bundle exec ruby examples/example.rb

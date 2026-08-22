@@ -15,6 +15,18 @@ venv/
 CLAUDE.local.md
 /research.md
 /plan.md
+.my-notes/
+*.gem
+
+# .boukensha/ is a marker directory — real config/sessions land in the
+# user's actual ~/.boukensha, never here. Keep only the marker file.
+/.boukensha/*
+!/.boukensha/.keep
+
+# Steps' examples/example.rb default BOUKENSHA_DIR to a repo-relative
+# .boukensha/ if unset — the root rule above only anchors to /, so nested
+# copies need their own rule.
+week1_baseline/.boukensha/
 
 # Generated output from bin/convert-world (parsed CircleMUD world JSON)
 docs/explore_architectures.md
