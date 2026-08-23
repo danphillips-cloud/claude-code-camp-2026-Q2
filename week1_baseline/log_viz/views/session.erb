@@ -168,8 +168,12 @@
     <% elsif entry.type == :tool %>
       <div class="tool-call<%= " tool-error" unless entry.tool_ok %>">
         <div class="tool-name">
-          &#9881; <%= entry.tool_name %>(<%= format_args(entry.tool_args) %>)
-          <% unless entry.tool_ok %><span class="tool-badge">error</span><% end %>
+          <span class="tool-name-text">&#9881; <%= entry.tool_name %>(<%= format_args(entry.tool_args) %>)</span>
+          <span class="tool-badges">
+            <% if entry.tool_initiator %><span class="tool-badge tool-badge-<%= entry.tool_initiator %>"><%= entry.tool_initiator %><%= " &middot; #{entry.tool_trigger}" if entry.tool_trigger %></span><% end %>
+            <% if entry.tool_duration_ms %><span class="tool-badge tool-badge-duration"><%= entry.tool_duration_ms %>ms</span><% end %>
+            <% unless entry.tool_ok %><span class="tool-badge">error</span><% end %>
+          </span>
         </div>
         <pre class="tool-result"><%= ansi_html(entry.tool_result) %></pre>
       </div>

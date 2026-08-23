@@ -529,6 +529,12 @@ table.sessions a:hover {
   border-bottom-color: #d9534f;
 }
 
+.tool-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
 .tool-badge {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -537,6 +543,22 @@ table.sessions a:hover {
   background: #d9534f;
   border-radius: 4px;
   padding: 0.05rem 0.4rem;
+}
+
+.tool-badge-hook {
+  background: #6c757d;
+}
+
+.tool-badge-model {
+  background: #4a7ba6;
+}
+
+.tool-badge-duration {
+  background: transparent;
+  color: var(--muted, #888);
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 0.05rem 0.2rem;
 }
 
 .tool-result {
