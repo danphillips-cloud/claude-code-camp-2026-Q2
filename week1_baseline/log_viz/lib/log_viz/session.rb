@@ -6,6 +6,7 @@ module LogViz
   class Session
     Entry = Struct.new(:type, :text, :usage, :turn, :iteration,
                        :tool_name, :tool_args, :tool_result, :tool_ok, :tool_error,
+                       :tool_initiator, :tool_duration_ms, :tool_trigger,
                        :stop_reason, :reason, :iterations, :tokens, :before, :dropped,
                        :running_turn_tokens, :redacted,
                        :task, :provider, :model, :input_tokens, :output_tokens,
@@ -132,6 +133,8 @@ module LogViz
           @entries << Entry.new(type: :tool, tool_name: event["name"] || call[:name], tool_args: call[:args],
                                  tool_result: event["result"], tool_ok: event.fetch("ok", true),
                                  tool_error: event["error"],
+                                 tool_initiator: event["initiator"], tool_duration_ms: event["duration_ms"],
+                                 tool_trigger: event["trigger"],
                                  turn: current_turn, iteration: current_iteration)
         when "turn_end"
           @entries << Entry.new(type: :turn_end, reason: event["reason"],
