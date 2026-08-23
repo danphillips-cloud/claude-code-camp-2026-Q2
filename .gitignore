@@ -32,3 +32,8 @@ week1_baseline/.boukensha/
 docs/explore_architectures.md
 week0_explore/preview/data/world/*/
 !week0_explore/preview/data/world/.keep
+
+# Vite/TS build caches in the week2 mud_monitor web app — not covered by
+# its own nested .gitignore, and not source.
+week2_capable/mud_monitor/web/.vite/
+week2_capable/mud_monitor/web/*.tsbuildinfo
